@@ -1,0 +1,90 @@
+ID,County,STID,Site_Name,Lat,Lon,Elev_ft,QC_Status
+1,Adair,CMBA,Columbia 3 N,37.1445,-85.29454,848,Retained
+2,Allen,SCTV,Scottsville 2 W,36.74426,-86.21881,818,Retained
+3,Ballard,BAND,La Center 5 NNE,37.13263,-88.9485,357,Excluded after second Quality Control (**)
+4,Barren,MROK,Glasgow 11 W,37.01328,-86.10588,696,Retained
+5,Bath,PRST,Owingsville 4 S,38.08895,-83.77646,829,Retained
+6,Boone,HUEY,Burlington 4 S,38.96701,-84.72165,896,Retained
+7,Boyle,DANV,Danville 3 SW,37.6235,-84.82212,981,Retained
+8,Breathitt,QKSD,Jackson 3 SE,37.53931,-83.34361,688,Retained
+9,Breathitt,RFSM,Jackson 14 SE,37.4301,-83.17972,1373,Excluded after second Quality Control (**)
+10,Breathitt,RFVC,Jackson 14 ESE,37.46072,-83.15864,833,Excluded after second Quality Control (**)
+11,Breckinridge,HARD,Hardinsburg 2 SSW,37.75927,-86.46125,643,Retained
+12,Breckinridge,MQDY,Hardinsburg 5 SW,37.71371,-86.49622,698,Excluded after second Quality Control (**)
+13,Bullitt,CRMT,Shepherdsville 6 SE,37.92247,-85.65755,544,Retained
+14,Butler,WDBY,Morgantown 4 SSE,37.17535,-86.64886,421,Retained
+15,Caldwell,PRNC,Princeton 2 SE,37.09534,-87.86162,509,Retained
+16,Calloway,MRRY,Murray 1 W,36.61261,-88.35579,568,Excluded after second Quality Control (**)
+17,Campbell,HHTS,Alexandria 5 NW,39.01997,-84.47495,838,Retained
+18,Carroll,CRRL,Carrollton 2 E,38.68919,-85.14227,472,Retained
+19,Casey,PCWN,Liberty 3 SW,37.28029,-84.96408,958,Retained
+20,Christian,PGHL,Hopkinsville 6 N,36.94682,-87.52138,729,Retained
+21,Clark,WNCH,Winchester 3 NW,38.03461,-84.20518,973,Retained
+22,Clay,PBDY,,37.13806,-83.57972,1434,Excluded after first Quality Control (*)
+23,Clinton,ALBN,Albany 1 N,36.71057,-85.13822,1020,Retained
+24,Crittenden,RPTN,Marion 4 NE,37.37774,-88.03613,594,Retained
+25,Cumberland,GRDR,Burkesville 3 W,36.80228,-85.43105,552,Retained
+26,Fayette,SPIN,,38.13,-84.5,936,Excluded after second Quality Control (**)
+27,Fayette,LXGN,Lexington 7 S,37.97496,-84.53354,1044,Retained
+28,Franklin,LSML,Frankfort 7 S,38.11611,-84.88194,744,Retained
+29,Fulton,HCKM,Hickman 2 E,36.57108,-89.15859,345,Retained
+30,Graves,PRYB,Mayfield 6 SW,36.69823,-88.72388,434,Retained
+31,Grayson,BLRK,Leitchfield 3 W,37.46262,-86.34379,722,Retained
+32,Green,GRBG,,37.21,-85.47,760,Excluded after second Quality Control (**)
+33,Hancock,LEWP,,37.92,-86.85,430,Excluded after first Quality Control (*)
+34,Hardin,CCLA,Elizabethtown 8 W,37.67934,-85.97877,746,Retained
+35,Harlan,BMTN,Harlan 24 E,36.91973,-82.90619,4031,Retained
+36,Harrison,RBSN,Cynthiana 8 N,38.49845,-84.34534,657,Retained
+37,Hart,HDYV,Munfordville 6 E,37.2606,-85.77805,716,Retained
+38,Henderson,GRHM,Henderson 5 E,37.82107,-87.50874,414,Retained
+39,Hopkins,ERLN,Madisonville 4 S,37.26764,-87.48109,592,Retained
+40,Jackson,OLIN,McKee 5 S,37.35629,-83.97128,1319,Retained
+41,Johnson,BTCK,Paintsville 4 W,37.83006,-82.8783,755,Retained
+42,Knott,VEST,Hindman 5 N,37.40718,-82.99309,1556,Retained
+43,Knox,BMBL,Barbourville 3 E,36.87034,-83.83302,1016,Retained
+44,LaRue,HDGV,Hodgenville 2 E,37.57281,-85.7045,831,Retained
+45,Laurel,LNDN,,37.12,-84.06,1170,Excluded after first Quality Control (*)
+46,Lawrence,LUSA,Louisa 1 S,38.09948,-82.60342,619,Retained
+47,Letcher,WTBG,Whitesburg 2 NW,37.12514,-82.84103,1152,Retained
+48,Lewis,CHTR,Vanceburg 6 W,38.58051,-83.42322,546,Retained
+49,Lincoln,LGNT,Stanford 4 NE,37.57999,-84.62147,930,Retained
+50,Logan,RSVL,Russellville 2 W,36.85296,-86.91544,656,Retained
+51,Madison,ELST,Richmond 8 E,37.7185,-84.15432,860,Retained
+52,Marion,LRTO,Lebanon 8 NW,37.62604,-85.37044,764,Retained
+53,Marshall,DRFN,Benton 4 N,36.91611,-88.33621,469,Retained
+54,Mason,WSHT,Maysville 3 SW,38.62369,-83.80754,909,Retained
+55,McCreary,FLRK,Whitley City 3 N,36.77062,-84.47668,1312,Retained
+56,McLean,PVRT,Calhoun 5 NW,37.58525,-87.31721,402,Retained
+57,Meade,BRND,Brandenburg 4 SW,37.95147,-86.22353,603,Retained
+58,Menifee,DCRD,Frenchburg 6 SSW,37.86619,-83.64786,1253,Excluded after second Quality Control (**)
+59,Mercer,HRDB,Harrodsburg 3 N,37.80573,-84.83997,908,Retained
+60,Metcalfe,RNDH,Edmonton 5 W,36.98902,-85.70415,1002,Retained
+61,Monroe,GAMA,Tompkinsville 7 SW,36.66154,-85.79668,842,Retained
+62,Morgan,WLBT,West Liberty 2 SW,37.9007,-83.2695,1071,Retained
+63,Muhlenberg,CCTY,Greenville 6 N,37.28792,-87.16084,522,Retained
+64,Nicholas,CARL,Carlisle 1 NW,38.32092,-84.03856,930,Excluded after second Quality Control (**)
+65,Nicholas,CLSL,Carlisle 5 SW,38.27965,-84.10369,940,Excluded after second Quality Control (**)
+66,Ohio,HTFD,Hartford 3 E,37.45732,-86.85513,538,Retained
+67,Oldham,LGRN,LaGrange 6 NW,38.46417,-85.47337,766,Retained
+68,Owen,SWON,Owenton 5 E,38.55099,-84.74443,870,Retained
+69,Owsley,BNVL,Bonneville 2 S,37.45197,-83.68578,785,Retained
+70,Powell,STAN,,37.85,-83.88,730,Excluded after first Quality Control (*)
+71,Pike,DORT,Pikeville 13 S,37.28457,-82.52473,2774,Retained
+72,Pulaski,DABN,Somerset 7 NNE,37.17853,-84.55867,1085,Excluded after second Quality Control (**)
+73,Rowan,MRHD,Morehead 4 NE,38.21914,-83.47736,851,Retained
+74,Russell,WOOD,Jamestown 5 E,36.99315,-84.96609,988,Excluded after second Quality Control (**)
+75,Shelby,CROP,Shelbyville 9 NNE,38.33022,-85.16864,844,Retained
+76,Shelby,FCHV,Shelbyville 10 W,38.16398,-85.38443,770,Retained
+77,Shelby,WADD,Shelbyville 10 SSE,38.09216,-85.13898,838,Excluded after second Quality Control (**)
+78,Simpson,SWZR,Franklin 4 SW,36.6733,-86.61416,740,Retained
+79,Spencer,BLOM,,37.96,-85.31,770,Excluded after first Quality Control (*)
+80,Taylor,BNGL,Campbellsville 7 W,37.35652,-85.45884,785,Retained
+81,Todd,ZION,Elkton 5 SW,36.75871,-87.21381,593,Retained
+82,Trigg,CADZ,Cadiz 4 SW,36.82746,-87.86036,505,Retained
+83,Trimble,BEDD,,38.63,-85.32,960,Excluded after first Quality Control (*)
+84,Union,FRNY,Morganfield 4 E,37.69183,-87.84444,439,Retained
+85,Warren,EWPK,Bowling Green 6 NE,37.03825,-86.3478,538,Excluded after second Quality Control (**)
+86,Warren,FARM,Bowling Green 5 S,36.93,-86.47,559,Retained
+87,Warren,PSPG,Bowling Green 4 E,37.01154,-86.37334,551,Excluded after second Quality Control (**)
+88,Wayne,MONT,Monticello 4 NW,36.87188,-84.9028,1045,Excluded after second Quality Control (**)
+89,Webster,DIXO,Dixon 1 NW,37.52337,-87.69352,479,Excluded after second Quality Control (**)
