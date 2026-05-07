@@ -54,49 +54,46 @@ ax.set_extent([-89.7, -81.8, 36.35, 39.25], crs=DATA_CRS)
 ax.add_feature(cfeature.OCEAN.with_scale("50m"), facecolor=C_OCEAN, zorder=0)
 ax.add_feature(cfeature.LAND.with_scale("50m"),  facecolor=C_NEIGHBOR, zorder=1)
 
-# County boundaries (light grey)
-counties = cfeature.NaturalEarthFeature(
-    "cultural", "admin_2_counties", "10m",
-    facecolor="none", edgecolor="#aaaaaa", linewidth=0.35
-)
-ax.add_feature(counties, zorder=2)
-
-# State boundaries
-states = cfeature.NaturalEarthFeature(
-    "cultural", "admin_1_states_provinces_lines", "50m",
-    facecolor="none", edgecolor="#555555", linewidth=0.9
-)
-ax.add_feature(states, zorder=3)
-
-# Kentucky polygon filled distinctly
-ky_shape = cfeature.NaturalEarthFeature(
-    "cultural", "admin_1_states_provinces", "10m",
-    facecolor="none", edgecolor="none"
-)
-# Use shapereader to isolate Kentucky
+# Use shapereader to isolate Kentucky (needed early for zorder sequencing)
 shpfile = natural_earth(resolution="10m", category="cultural",
                         name="admin_1_states_provinces")
 reader  = Reader(shpfile)
 ky_geom = [rec.geometry for rec in reader.records()
            if rec.attributes.get("name") == "Kentucky"]
 
-from cartopy.mpl.patch import geos_to_path
-import matplotlib.patches as patches
-from matplotlib.collections import PathCollection
-
+# Kentucky fill drawn BEFORE counties so county lines render on top inside KY
 for geom in ky_geom:
     ax.add_geometries([geom], DATA_CRS, facecolor=C_KY_FILL,
-                      edgecolor=C_KY_EDGE, linewidth=1.2, zorder=2)
+                      edgecolor="none", linewidth=0, zorder=2)
 
-# Rivers (optional detail)
+# County boundaries — drawn after KY fill so edges are visible inside KY too
+counties = cfeature.NaturalEarthFeature(
+    "cultural", "admin_2_counties", "10m",
+    facecolor="none", edgecolor="#aaaaaa", linewidth=0.35
+)
+ax.add_feature(counties, zorder=3)
+
+# Kentucky border on top of counties
+for geom in ky_geom:
+    ax.add_geometries([geom], DATA_CRS, facecolor="none",
+                      edgecolor=C_KY_EDGE, linewidth=1.4, zorder=4)
+
+# State boundaries
+states = cfeature.NaturalEarthFeature(
+    "cultural", "admin_1_states_provinces_lines", "50m",
+    facecolor="none", edgecolor="#555555", linewidth=0.9
+)
+ax.add_feature(states, zorder=4)
+
+# Rivers
 rivers = cfeature.NaturalEarthFeature(
     "physical", "rivers_lake_centerlines", "10m",
     facecolor="none", edgecolor="#7ab8d9", linewidth=0.5
 )
-ax.add_feature(rivers, zorder=3)
+ax.add_feature(rivers, zorder=5)
 
 # --- station scatter plots ---------------------------------------------------
-common_kw = dict(transform=DATA_CRS, zorder=5, linewidths=0.6,
+common_kw = dict(transform=DATA_CRS, zorder=6, linewidths=0.6,
                  edgecolors="white")
 
 ax.scatter(retained["Lon"], retained["Lat"],
@@ -124,9 +121,10 @@ legend_elements = [
            markeredgewidth=0.5, markersize=8),
 ]
 
+# Place legend in the upper-left (Indiana/Illinois territory, clear of Kentucky)
 leg = ax.legend(
     handles=legend_elements,
-    loc="lower left",
+    loc="upper left",
     fontsize=7.5,
     framealpha=0.92,
     edgecolor="#888888",
@@ -137,28 +135,26 @@ leg = ax.legend(
 )
 leg._legend_box.align = "left"
 
-# --- scale bar ---------------------------------------------------------------
-# Simple manual scale bar at bottom-right
-from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
-scale_lon_start = -83.0
+# --- scale bar (lower-left, over Missouri/Tennessee territory) ---------------
+scale_lon_start = -89.4
 scale_lat = 36.55
 scale_km = 100  # km
 deg_per_km = 1 / 111.0
 scale_lon_end = scale_lon_start + scale_km * deg_per_km / np.cos(np.radians(scale_lat))
 
 ax.plot([scale_lon_start, scale_lon_end], [scale_lat, scale_lat],
-        color="black", linewidth=2, transform=DATA_CRS, zorder=6,
+        color="black", linewidth=2, transform=DATA_CRS, zorder=7,
         solid_capstyle="butt")
 ax.plot([scale_lon_start, scale_lon_start], [scale_lat - 0.04, scale_lat + 0.04],
-        color="black", linewidth=1.5, transform=DATA_CRS, zorder=6)
+        color="black", linewidth=1.5, transform=DATA_CRS, zorder=7)
 ax.plot([scale_lon_end, scale_lon_end], [scale_lat - 0.04, scale_lat + 0.04],
-        color="black", linewidth=1.5, transform=DATA_CRS, zorder=6)
+        color="black", linewidth=1.5, transform=DATA_CRS, zorder=7)
 ax.text((scale_lon_start + scale_lon_end) / 2, scale_lat - 0.12,
         "100 km", ha="center", va="top", fontsize=6.5,
-        transform=DATA_CRS, zorder=6)
+        transform=DATA_CRS, zorder=7)
 
-# --- north arrow -------------------------------------------------------------
-ax.annotate("N", xy=(0.955, 0.12), xytext=(0.955, 0.055),
+# --- north arrow (lower-left, just right of scale bar) ----------------------
+ax.annotate("N", xy=(0.09, 0.12), xytext=(0.09, 0.055),
             xycoords="axes fraction",
             fontsize=10, ha="center", fontweight="bold",
             arrowprops=dict(arrowstyle="-|>", color="black",
@@ -170,8 +166,8 @@ ax.set_title("Study Area: Kentucky Mesonet Station Network",
              fontsize=11, fontweight="bold", pad=8, fontfamily=FONT)
 
 # ── inset: CONUS ─────────────────────────────────────────────────────────────
-# Position: upper-right corner
-ax_inset = fig.add_axes([0.68, 0.62, 0.29, 0.24],
+# Position: lower-right corner (Tennessee territory, well below Kentucky)
+ax_inset = fig.add_axes([0.68, 0.09, 0.28, 0.22],
                         projection=ccrs.LambertConformal(
                             central_longitude=-96, central_latitude=39))
 
