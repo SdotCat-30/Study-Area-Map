@@ -148,30 +148,31 @@ leg = ax.legend(
 )
 leg._legend_box.align = "left"
 
-# ── scale bar (bottom-centre — central Tennessee, clear of all KY stations) ────
-# KY's southern border near -86°W is ~36.5°N; placing bar at 36.42°N is in TN.
-sc_lon0 = -86.8
-sc_lat  = 36.42
-sc_lon1 = sc_lon0 + 100 / 111.0 / np.cos(np.radians(sc_lat))
+# ── scale bar — lower-right corner, axes-fraction anchored ───────────────────
+# Draw in geographic coords but at a lat/lon that sits comfortably inside the
+# bottom-right of the visible frame (Virginia/TN territory below eastern KY).
+sc_lat  = 36.62
+sc_lon1 = -82.3
+sc_lon0 = sc_lon1 - 100 / (111.0 * np.cos(np.radians(sc_lat)))
 
 for x0, x1, y0, y1 in [
     (sc_lon0, sc_lon1, sc_lat,        sc_lat),
     (sc_lon0, sc_lon0, sc_lat - 0.04, sc_lat + 0.04),
     (sc_lon1, sc_lon1, sc_lat - 0.04, sc_lat + 0.04),
 ]:
-    ax.plot([x0, x1], [y0, y1], color="black", linewidth=1.8,
+    ax.plot([x0, x1], [y0, y1], color="black", linewidth=2.0,
             transform=DATA_CRS, zorder=8, solid_capstyle="butt")
 
-ax.text((sc_lon0 + sc_lon1) / 2, sc_lat - 0.13, "100 km",
-        ha="center", va="top", fontsize=6.5,
+ax.text((sc_lon0 + sc_lon1) / 2, sc_lat - 0.11, "100 km",
+        ha="center", va="top", fontsize=7,
         transform=DATA_CRS, zorder=8)
 
-# ── north arrow (just left of scale bar) ──────────────────────────────────────
-ax.annotate("N", xy=(0.385, 0.055), xytext=(0.385, 0.0),
+# ── north arrow — lower-right, just left of scale bar ────────────────────────
+ax.annotate("N", xy=(0.88, 0.115), xytext=(0.88, 0.055),
             xycoords="axes fraction",
-            fontsize=10, ha="center", fontweight="bold",
+            fontsize=11, ha="center", fontweight="bold",
             arrowprops=dict(arrowstyle="-|>", color="black",
-                            lw=1.5, mutation_scale=12),
+                            lw=1.8, mutation_scale=14),
             annotation_clip=False)
 
 # ── title ─────────────────────────────────────────────────────────────────────
