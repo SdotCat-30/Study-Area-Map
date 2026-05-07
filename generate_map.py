@@ -1,7 +1,8 @@
 """
 Publication-quality study-area map of Kentucky Mesonet stations.
-Includes a CONUS inset (right-margin strip, no overlap with KY) and
-highlights matched stations (MRHD, SCTV, CRMT, HCKM, WDBY, WLBT).
+- Only retained stations shown (excluded stations removed)
+- Matched stations (MRHD, SCTV, CRMT, HCKM, WDBY, WLBT) labelled on map
+- CONUS inset placed below the legend in the upper-left (Indiana territory)
 """
 
 import pandas as pd
@@ -20,59 +21,50 @@ df = df.dropna(subset=["Lat", "Lon"])
 
 MATCHED_STIDS = {"MRHD", "SCTV", "CRMT", "HCKM", "WDBY", "WLBT"}
 
-retained   = df[df["QC_Status"] == "Retained"]
-excl_first = df[df["QC_Status"].str.startswith("Excluded after first")]
-excl_sec   = df[df["QC_Status"].str.startswith("Excluded after second")]
-matched    = df[df["STID"].isin(MATCHED_STIDS)]
+retained = df[df["QC_Status"] == "Retained"]
+matched  = df[df["STID"].isin(MATCHED_STIDS)]
 
-# ── colours / sizes ───────────────────────────────────────────────────────────
-DATA_CRS   = ccrs.PlateCarree()
-PROJ       = ccrs.AlbersEqualArea(central_longitude=-86.0, central_latitude=37.8)
+# ── projection / colours ──────────────────────────────────────────────────────
+DATA_CRS  = ccrs.PlateCarree()
+PROJ      = ccrs.AlbersEqualArea(central_longitude=-86.0, central_latitude=37.8)
 
 C_RETAIN   = "#1a6dab"
-C_EXCL1    = "#e07b00"
-C_EXCL2    = "#c0392b"
-C_MATCH    = "#f5c518"   # gold star for matched stations
+C_MATCH    = "#f5c518"
 C_KY_FILL  = "#dce9f5"
 C_NEIGHBOR = "#f0f0f0"
 C_KY_EDGE  = "#2c3e50"
 
-SZ  = 52    # regular marker size
-SZM = 90    # matched-station star size
 FONT = "DejaVu Sans"
 
-# ── figure layout ─────────────────────────────────────────────────────────────
-# 11 × 7 inches – main map takes left 78 %, right strip (~2.2 in) holds inset
-fig = plt.figure(figsize=(11, 7), dpi=300)
+# ── figure ────────────────────────────────────────────────────────────────────
+fig = plt.figure(figsize=(10, 7), dpi=300)
 fig.patch.set_facecolor("white")
 
-# Main map axes
-ax = fig.add_axes([0.02, 0.08, 0.77, 0.86], projection=PROJ)
+ax = fig.add_axes([0.02, 0.08, 0.96, 0.85], projection=PROJ)
 ax.set_extent([-89.7, -81.8, 36.35, 39.25], crs=DATA_CRS)
 
-# ── basemap layers (strict zorder so KY counties are visible) ─────────────────
-ax.add_feature(cfeature.OCEAN.with_scale("50m"), facecolor="white",  zorder=0)
+# ── basemap layers ────────────────────────────────────────────────────────────
+ax.add_feature(cfeature.OCEAN.with_scale("50m"), facecolor="white",    zorder=0)
 ax.add_feature(cfeature.LAND.with_scale("50m"),  facecolor=C_NEIGHBOR, zorder=1)
 
-# Isolate Kentucky geometry once (reused in inset)
 shpfile = natural_earth(resolution="10m", category="cultural",
                         name="admin_1_states_provinces")
 ky_geom = [r.geometry for r in Reader(shpfile).records()
            if r.attributes.get("name") == "Kentucky"]
 
-# 1) KY fill (zorder 2) — drawn before counties
+# 1) KY fill (must precede county edges)
 for geom in ky_geom:
     ax.add_geometries([geom], DATA_CRS, facecolor=C_KY_FILL,
                       edgecolor="none", linewidth=0, zorder=2)
 
-# 2) County edges visible inside KY (zorder 3)
+# 2) County edges (visible inside KY because drawn after fill)
 ax.add_feature(
     cfeature.NaturalEarthFeature("cultural", "admin_2_counties", "10m",
                                  facecolor="none", edgecolor="#aaaaaa",
                                  linewidth=0.35),
     zorder=3)
 
-# 3) KY border redrawn on top of counties (zorder 4)
+# 3) KY border redrawn on top
 for geom in ky_geom:
     ax.add_geometries([geom], DATA_CRS, facecolor="none",
                       edgecolor=C_KY_EDGE, linewidth=1.4, zorder=4)
@@ -93,37 +85,52 @@ ax.add_feature(
     zorder=5)
 
 # ── station markers ───────────────────────────────────────────────────────────
-ckw = dict(transform=DATA_CRS, zorder=6, linewidths=0.6, edgecolors="white")
+# Retained stations (blue circles)
+ax.scatter(retained["Lon"], retained["Lat"],
+           s=48, marker="o", color=C_RETAIN,
+           edgecolors="white", linewidths=0.6,
+           transform=DATA_CRS, zorder=6)
 
-ax.scatter(retained["Lon"],   retained["Lat"],
-           s=SZ,  marker="o", color=C_RETAIN, **ckw)
-ax.scatter(excl_first["Lon"], excl_first["Lat"],
-           s=SZ,  marker="^", color=C_EXCL1,  **ckw)
-ax.scatter(excl_sec["Lon"],   excl_sec["Lat"],
-           s=SZ,  marker="s", color=C_EXCL2,  **ckw)
-
-# Matched stations: gold star on top (zorder 7 so it sits above base markers)
+# Matched stations (gold stars, on top)
 ax.scatter(matched["Lon"], matched["Lat"],
-           s=SZM, marker="*", color=C_MATCH,
+           s=110, marker="*", color=C_MATCH,
            edgecolors="#7a5c00", linewidths=0.7,
            transform=DATA_CRS, zorder=7)
 
-# ── legend (upper-left → Indiana/Illinois territory, clear of KY) ─────────────
+# ── matched station labels ────────────────────────────────────────────────────
+# Fine-tune per-station offsets to avoid marker overlap
+label_offsets = {
+    "MRHD": ( 5,  4),
+    "SCTV": ( 5,  4),
+    "CRMT": ( 5,  4),
+    "HCKM": ( 5,  4),
+    "WDBY": ( 5,  4),
+    "WLBT": ( 5,  4),
+}
+
+for _, row in matched.iterrows():
+    dx, dy = label_offsets.get(row["STID"], (5, 4))
+    ax.annotate(
+        row["STID"],
+        xy=(row["Lon"], row["Lat"]),
+        xycoords=DATA_CRS._as_mpl_transform(ax),
+        xytext=(dx, dy),
+        textcoords="offset points",
+        fontsize=6.5, fontweight="bold", color="#3d2b00",
+        ha="left", va="bottom",
+        bbox=dict(boxstyle="round,pad=0.15", facecolor="white",
+                  alpha=0.75, edgecolor="none"),
+        zorder=8,
+    )
+
+# ── legend (upper-left — Indiana/Illinois territory) ─────────────────────────
 legend_elements = [
     Line2D([0], [0], marker="o", color="w",
            label=f"Retained (n={len(retained)})",
            markerfacecolor=C_RETAIN, markeredgecolor="white",
            markeredgewidth=0.5, markersize=8),
-    Line2D([0], [0], marker="^", color="w",
-           label=f"Excluded – 1st QC (n={len(excl_first)})",
-           markerfacecolor=C_EXCL1, markeredgecolor="white",
-           markeredgewidth=0.5, markersize=8),
-    Line2D([0], [0], marker="s", color="w",
-           label=f"Excluded – 2nd QC (n={len(excl_sec)})",
-           markerfacecolor=C_EXCL2, markeredgecolor="white",
-           markeredgewidth=0.5, markersize=8),
     Line2D([0], [0], marker="*", color="w",
-           label=f"Matched stations (n={len(matched)}, ≤2 km)",
+           label=f"Matched stations (n={len(matched)}, ≤2 km)",
            markerfacecolor=C_MATCH, markeredgecolor="#7a5c00",
            markeredgewidth=0.6, markersize=11),
 ]
@@ -141,13 +148,14 @@ leg = ax.legend(
 )
 leg._legend_box.align = "left"
 
-# ── scale bar (lower-left, over Missouri/Tennessee — clearly outside KY) ──────
-sc_lon0 = -89.4
-sc_lat  = 36.52
+# ── scale bar (bottom-centre — central Tennessee, clear of all KY stations) ────
+# KY's southern border near -86°W is ~36.5°N; placing bar at 36.42°N is in TN.
+sc_lon0 = -86.8
+sc_lat  = 36.42
 sc_lon1 = sc_lon0 + 100 / 111.0 / np.cos(np.radians(sc_lat))
 
 for x0, x1, y0, y1 in [
-    (sc_lon0, sc_lon1, sc_lat, sc_lat),
+    (sc_lon0, sc_lon1, sc_lat,        sc_lat),
     (sc_lon0, sc_lon0, sc_lat - 0.04, sc_lat + 0.04),
     (sc_lon1, sc_lon1, sc_lat - 0.04, sc_lat + 0.04),
 ]:
@@ -158,8 +166,8 @@ ax.text((sc_lon0 + sc_lon1) / 2, sc_lat - 0.13, "100 km",
         ha="center", va="top", fontsize=6.5,
         transform=DATA_CRS, zorder=8)
 
-# ── north arrow (just right of scale bar, lower-left) ─────────────────────────
-ax.annotate("N", xy=(0.095, 0.115), xytext=(0.095, 0.055),
+# ── north arrow (just left of scale bar) ──────────────────────────────────────
+ax.annotate("N", xy=(0.385, 0.055), xytext=(0.385, 0.0),
             xycoords="axes fraction",
             fontsize=10, ha="center", fontweight="bold",
             arrowprops=dict(arrowstyle="-|>", color="black",
@@ -170,12 +178,21 @@ ax.annotate("N", xy=(0.095, 0.115), xytext=(0.095, 0.055),
 ax.set_title("Study Area: Kentucky Mesonet Station Network",
              fontsize=11, fontweight="bold", pad=8, fontfamily=FONT)
 
-# ── inset: CONUS (right-margin strip — entirely outside main axes) ─────────────
-# Main axes right edge is at figure x ≈ 0.02 + 0.77 = 0.79
-# Inset lives in [0.805, 0.32, 0.185, 0.56] — no geographic overlap possible
+# ── CONUS inset — placed just below the legend in upper-left ──────────────────
+# Render first so we can read the legend's actual bounding box in figure coords.
+fig.canvas.draw()
+renderer    = fig.canvas.get_renderer()
+leg_bb      = leg.get_window_extent(renderer).transformed(fig.transFigure.inverted())
+
+gap         = 0.012          # small vertical gap between legend and inset
+inset_h     = 0.19
+inset_w     = max(leg_bb.width, 0.20)   # at least as wide as the legend
+inset_left  = leg_bb.x0
+inset_bot   = leg_bb.y0 - gap - inset_h
+
 ax_ins = fig.add_axes(
-    [0.805, 0.30, 0.185, 0.58],
-    projection=ccrs.LambertConformal(central_longitude=-96, central_latitude=39)
+    [inset_left, inset_bot, inset_w, inset_h],
+    projection=ccrs.LambertConformal(central_longitude=-96, central_latitude=39),
 )
 ax_ins.set_extent([-125, -66, 24, 50], crs=DATA_CRS)
 
@@ -201,14 +218,11 @@ for spine in ax_ins.spines.values():
     spine.set_edgecolor("#444444")
     spine.set_linewidth(1.0)
 
-ax_ins.set_title("Location\nin USA", fontsize=6.5, pad=3, linespacing=1.3)
+ax_ins.set_title("Location in USA", fontsize=6, pad=3)
 
 # ── save ──────────────────────────────────────────────────────────────────────
-for path, kw in [
-    ("kentucky_mesonet_study_area_map.png",
-     dict(dpi=300, bbox_inches="tight", facecolor="white", edgecolor="none")),
-    ("kentucky_mesonet_study_area_map.pdf",
-     dict(bbox_inches="tight", facecolor="white", edgecolor="none")),
-]:
-    fig.savefig(path, **kw)
-    print(f"Saved → {path}")
+save_kw = dict(bbox_inches="tight", facecolor="white", edgecolor="none")
+fig.savefig("kentucky_mesonet_study_area_map.png", dpi=300, **save_kw)
+print("Saved → kentucky_mesonet_study_area_map.png")
+fig.savefig("kentucky_mesonet_study_area_map.pdf", **save_kw)
+print("Saved → kentucky_mesonet_study_area_map.pdf")
