@@ -56,7 +56,7 @@ ALTERNATIVES = {
         "ky_fill":     "#f0f0f0",  # near white
         "ky_edge":     "#111111",  # near black
         "neighbor":    "#d8d8d8",  # medium gray
-        "county":      "#999999",
+        "county":      "#666666",
         "c_retain":    "#2b2b2b",  # dark charcoal
         "c_match":     "#d4a017",  # gold
         "c_match_edge":"#6b4c00",
@@ -103,7 +103,7 @@ def build_map(style_key, style):
     ky_county_geoms = [r.geometry for r in Reader(county_shp).records()
                        if r.attributes.get("iso_3166_2", "") == "US-KY"]
     ax.add_geometries(ky_county_geoms, DATA_CRS, facecolor="none",
-                      edgecolor=style["county"], linewidth=0.35, zorder=3)
+                      edgecolor=style["county"], linewidth=0.5, zorder=3)
 
     # Neighboring state outlines — drawn once, clean single stroke
     neighbor_geoms = [r.geometry for r in Reader(shpfile).records()
@@ -203,28 +203,59 @@ def build_map(style_key, style):
     )
     leg._legend_box.align = "left"
 
-    # ── scale bar ─────────────────────────────────────────────────────────────
-    sc_lat  = 36.62
-    sc_lon1 = -82.3
-    sc_lon0 = sc_lon1 - 100 / (111.0 * np.cos(np.radians(sc_lat)))
-    for x0, x1, y0, y1 in [
-        (sc_lon0, sc_lon1, sc_lat,        sc_lat),
-        (sc_lon0, sc_lon0, sc_lat - 0.04, sc_lat + 0.04),
-        (sc_lon1, sc_lon1, sc_lat - 0.04, sc_lat + 0.04),
-    ]:
-        ax.plot([x0, x1], [y0, y1], color="black", linewidth=2.0,
-                transform=DATA_CRS, zorder=8, solid_capstyle="butt")
-    ax.text((sc_lon0 + sc_lon1) / 2, sc_lat - 0.11, "100 km",
-            ha="center", va="top", fontsize=7,
-            transform=DATA_CRS, zorder=8)
+    # ── GIS scale bar — alternating black/white segments ─────────────────────
+    from matplotlib.patches import Polygon as MplPolygon
+    sc_lat_b  = 36.595           # bottom of bar
+    sc_lat_t  = 36.655           # top of bar  (0.06° ≈ 6.7 km tall)
+    sc_lon1   = -82.18           # right edge
+    km_per_deg = 111.0 * np.cos(np.radians((sc_lat_b + sc_lat_t) / 2))
+    sc_lon0   = sc_lon1 - 100 / km_per_deg   # left edge (100 km total)
+    sc_lon_mid = (sc_lon0 + sc_lon1) / 2     # 50 km mark
 
-    # ── north arrow ───────────────────────────────────────────────────────────
-    ax.annotate("N", xy=(0.88, 0.115), xytext=(0.88, 0.055),
-                xycoords="axes fraction",
-                fontsize=11, ha="center", fontweight="bold",
-                arrowprops=dict(arrowstyle="-|>", color="black",
-                                lw=1.8, mutation_scale=14),
-                annotation_clip=False)
+    # Black segment (0–50 km)
+    ax.fill([sc_lon0, sc_lon_mid, sc_lon_mid, sc_lon0],
+            [sc_lat_b, sc_lat_b, sc_lat_t, sc_lat_t],
+            color="black", transform=DATA_CRS, zorder=9, clip_on=True)
+    # White segment (50–100 km)
+    ax.fill([sc_lon_mid, sc_lon1, sc_lon1, sc_lon_mid],
+            [sc_lat_b, sc_lat_b, sc_lat_t, sc_lat_t],
+            color="white", transform=DATA_CRS, zorder=9, clip_on=True)
+    # Outer border + centre divider — single crisp stroke
+    ax.plot([sc_lon0, sc_lon1, sc_lon1, sc_lon0, sc_lon0],
+            [sc_lat_b, sc_lat_b, sc_lat_t, sc_lat_t, sc_lat_b],
+            color="black", linewidth=0.9, transform=DATA_CRS, zorder=10,
+            solid_capstyle="butt", solid_joinstyle="miter")
+    ax.plot([sc_lon_mid, sc_lon_mid], [sc_lat_b, sc_lat_t],
+            color="black", linewidth=0.9, transform=DATA_CRS, zorder=10,
+            solid_capstyle="butt")
+    # Tick labels
+    label_y = sc_lat_b - 0.045
+    for lon, lbl in [(sc_lon0, "0"), (sc_lon_mid, "50"), (sc_lon1, "100 km")]:
+        ax.text(lon, label_y, lbl, transform=DATA_CRS, zorder=10,
+                ha="center", va="top", fontsize=6.5, fontfamily=FONT)
+
+    # ── GIS north arrow — split black/white polygon ────────────────────────
+    # Drawn in axes-fraction coordinates so it is always correctly positioned
+    na_x   = 0.945   # horizontal centre (axes fraction)
+    na_bot = 0.055   # bottom of shaft
+    na_top = 0.185   # tip of arrowhead
+    na_w   = 0.018   # half-width at base
+
+    # Left half — black
+    left = MplPolygon(
+        [[na_x - na_w, na_bot], [na_x, na_top], [na_x, na_bot]],
+        closed=True, facecolor="black", edgecolor="black",
+        linewidth=0.6, transform=ax.transAxes, zorder=10, clip_on=False)
+    # Right half — white
+    right = MplPolygon(
+        [[na_x + na_w, na_bot], [na_x, na_top], [na_x, na_bot]],
+        closed=True, facecolor="white", edgecolor="black",
+        linewidth=0.6, transform=ax.transAxes, zorder=10, clip_on=False)
+    ax.add_patch(left)
+    ax.add_patch(right)
+    ax.text(na_x, na_top + 0.012, "N", transform=ax.transAxes,
+            ha="center", va="bottom", fontsize=10, fontweight="bold",
+            zorder=10, clip_on=False)
 
     # ── title ─────────────────────────────────────────────────────────────────
     ax.set_title("Study Area: Kentucky Mesonet Station Network",
