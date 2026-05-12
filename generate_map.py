@@ -42,10 +42,7 @@ county_shp = natural_earth(resolution="10m", category="cultural",
                            name="admin_2_counties")
 ky_county_geoms = [
     r.geometry for r in Reader(county_shp).records()
-    if (r.attributes.get("iso_3166_2", "") == "US-KY"
-        or r.attributes.get("name_1", "") == "Kentucky"
-        or str(r.attributes.get("gn_a1_code", "")) == "US.KY"
-        or str(r.attributes.get("code_hasc", "")).startswith("US.KY"))
+    if r.attributes.get("REGION", "") == "KY"
 ]
 
 NEIGHBOR_STATES = {
