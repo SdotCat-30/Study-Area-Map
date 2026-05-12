@@ -40,8 +40,13 @@ ky_geom = [r.geometry for r in Reader(shpfile).records()
 
 county_shp = natural_earth(resolution="10m", category="cultural",
                            name="admin_2_counties")
-ky_county_geoms = [r.geometry for r in Reader(county_shp).records()
-                   if r.attributes.get("iso_3166_2", "") == "US-KY"]
+ky_county_geoms = [
+    r.geometry for r in Reader(county_shp).records()
+    if (r.attributes.get("iso_3166_2", "") == "US-KY"
+        or r.attributes.get("name_1", "") == "Kentucky"
+        or str(r.attributes.get("gn_a1_code", "")) == "US.KY"
+        or str(r.attributes.get("code_hasc", "")).startswith("US.KY"))
+]
 
 NEIGHBOR_STATES = {
     "Indiana", "Ohio", "Illinois", "Missouri",
@@ -185,9 +190,9 @@ def build_map(style_key, style):
         ax.add_geometries([geom], DATA_CRS, facecolor=style["ky_fill"],
                           edgecolor="none", linewidth=0, zorder=2)
 
-    # Kentucky county lines — KY-only, dark and thick for clear legibility
+    # Kentucky county lines — KY-only, dark for clear legibility
     ax.add_geometries(ky_county_geoms, DATA_CRS, facecolor="none",
-                      edgecolor=style["county"], linewidth=0.65, zorder=3)
+                      edgecolor=style["county"], linewidth=0.8, zorder=3)
 
     # Neighboring state outlines
     neighbor_geoms = [r.geometry for r in Reader(shpfile).records()
