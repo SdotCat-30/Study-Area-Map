@@ -56,7 +56,7 @@ ALTERNATIVES = {
         "ky_fill":     "#f0f0f0",  # near white
         "ky_edge":     "#111111",  # near black
         "neighbor":    "#d8d8d8",  # medium gray
-        "county":      "#bbbbbb",
+        "county":      "#999999",
         "c_retain":    "#2b2b2b",  # dark charcoal
         "c_match":     "#d4a017",  # gold
         "c_match_edge":"#6b4c00",
@@ -284,6 +284,11 @@ def build_map(style_key, style):
     print(f"Saved → {out_png}  ({style['label']})")
     fig.savefig(out_pdf, **save_kw)
     print(f"Saved → {out_pdf}")
+    # B is the chosen final style — also write the primary output files
+    if style_key == "B":
+        fig.savefig("kentucky_mesonet_study_area_map.png", dpi=300, **save_kw)
+        fig.savefig("kentucky_mesonet_study_area_map.pdf", **save_kw)
+        print("Saved → kentucky_mesonet_study_area_map.png / .pdf  (final)")
     plt.close(fig)
 
 
