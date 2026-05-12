@@ -2,17 +2,22 @@
 Publication-quality study-area map of Kentucky Mesonet stations.
 - Only retained stations shown (excluded stations removed)
 - Matched stations (MRHD, SCTV, CRMT, HCKM, WDBY, WLBT) labelled on map
-- CONUS inset placed below the legend in the upper-left (Indiana territory)
+- Lat/lon graticule with degree labels at all four map edges
+- Clear Kentucky boundary layer
+- Consistent CONUS inset in upper-left
 """
 
 import pandas as pd
 import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
+import matplotlib.ticker as mticker
 from matplotlib.lines import Line2D
+from matplotlib.patches import FancyArrowPatch
 import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.io.shapereader import natural_earth, Reader
+from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
 import numpy as np
 
 # ── data ──────────────────────────────────────────────────────────────────────
@@ -32,7 +37,7 @@ C_RETAIN   = "#1a6dab"
 C_MATCH    = "#f5c518"
 C_KY_FILL  = "#dce9f5"
 C_NEIGHBOR = "#f0f0f0"
-C_KY_EDGE  = "#2c3e50"
+C_KY_EDGE  = "#1a2a3a"   # darkened for clearer boundary
 
 FONT = "DejaVu Sans"
 
@@ -40,7 +45,8 @@ FONT = "DejaVu Sans"
 fig = plt.figure(figsize=(10, 7), dpi=300)
 fig.patch.set_facecolor("white")
 
-ax = fig.add_axes([0.02, 0.08, 0.96, 0.85], projection=PROJ)
+# Leave margin on all sides for graticule labels
+ax = fig.add_axes([0.09, 0.08, 0.87, 0.84], projection=PROJ)
 ax.set_extent([-89.7, -81.8, 36.35, 39.25], crs=DATA_CRS)
 
 # ── basemap layers ────────────────────────────────────────────────────────────
@@ -64,10 +70,10 @@ ax.add_feature(
                                  linewidth=0.35),
     zorder=3)
 
-# 3) KY border redrawn on top
+# 3) KY border — clear, prominent boundary layer
 for geom in ky_geom:
     ax.add_geometries([geom], DATA_CRS, facecolor="none",
-                      edgecolor=C_KY_EDGE, linewidth=1.4, zorder=4)
+                      edgecolor=C_KY_EDGE, linewidth=2.0, zorder=4)
 
 # 4) State lines
 ax.add_feature(
@@ -84,21 +90,57 @@ ax.add_feature(
                                  linewidth=0.5),
     zorder=5)
 
+# ── lat/lon graticule with degree labels ──────────────────────────────────────
+gl = ax.gridlines(
+    crs=DATA_CRS,
+    draw_labels=True,
+    linewidth=0.45,
+    color="#999999",
+    alpha=0.65,
+    linestyle="--",
+    x_inline=False,
+    y_inline=False,
+)
+gl.top_labels    = True
+gl.bottom_labels = True
+gl.left_labels   = True
+gl.right_labels  = True
+gl.xlocator  = mticker.FixedLocator([-90, -89, -88, -87, -86, -85, -84, -83, -82])
+gl.ylocator  = mticker.FixedLocator([36, 36.5, 37, 37.5, 38, 38.5, 39, 39.5])
+gl.xformatter = LongitudeFormatter(degree_symbol="°")
+gl.yformatter = LatitudeFormatter(degree_symbol="°")
+gl.xlabel_style = {"size": 6.5, "color": "#333333"}
+gl.ylabel_style = {"size": 6.5, "color": "#333333"}
+
+# ── neighboring-state labels ──────────────────────────────────────────────────
+state_labels = [
+    ("Indiana",      -86.40, 39.05),
+    ("Ohio",         -83.20, 39.05),
+    ("Illinois",     -89.45, 37.80),
+    ("Missouri",     -89.55, 36.80),
+    ("Tennessee",    -86.50, 36.50),
+    ("Virginia",     -82.00, 37.25),
+    ("West Virginia",-81.90, 38.20),
+]
+for name, lon, lat in state_labels:
+    ax.text(lon, lat, name, transform=DATA_CRS,
+            fontsize=6, color="#444444", ha="center", va="center",
+            fontstyle="italic", zorder=6,
+            bbox=dict(boxstyle="round,pad=0.1", facecolor="white",
+                      alpha=0.55, edgecolor="none"))
+
 # ── station markers ───────────────────────────────────────────────────────────
-# Retained stations (blue circles)
 ax.scatter(retained["Lon"], retained["Lat"],
            s=48, marker="o", color=C_RETAIN,
            edgecolors="white", linewidths=0.6,
            transform=DATA_CRS, zorder=6)
 
-# Matched stations (gold stars, on top)
 ax.scatter(matched["Lon"], matched["Lat"],
            s=110, marker="*", color=C_MATCH,
            edgecolors="#7a5c00", linewidths=0.7,
            transform=DATA_CRS, zorder=7)
 
 # ── matched station labels ────────────────────────────────────────────────────
-# Fine-tune per-station offsets to avoid marker overlap
 label_offsets = {
     "MRHD": ( 5,  4),
     "SCTV": ( 5,  4),
@@ -123,7 +165,7 @@ for _, row in matched.iterrows():
         zorder=8,
     )
 
-# ── legend (upper-left — Indiana/Illinois territory) ─────────────────────────
+# ── legend (upper-left — Indiana territory) ───────────────────────────────────
 legend_elements = [
     Line2D([0], [0], marker="o", color="w",
            label=f"Retained (n={len(retained)})",
@@ -148,9 +190,7 @@ leg = ax.legend(
 )
 leg._legend_box.align = "left"
 
-# ── scale bar — lower-right corner, axes-fraction anchored ───────────────────
-# Draw in geographic coords but at a lat/lon that sits comfortably inside the
-# bottom-right of the visible frame (Virginia/TN territory below eastern KY).
+# ── scale bar — lower-right corner ───────────────────────────────────────────
 sc_lat  = 36.62
 sc_lon1 = -82.3
 sc_lon0 = sc_lon1 - 100 / (111.0 * np.cos(np.radians(sc_lat)))
@@ -167,7 +207,7 @@ ax.text((sc_lon0 + sc_lon1) / 2, sc_lat - 0.11, "100 km",
         ha="center", va="top", fontsize=7,
         transform=DATA_CRS, zorder=8)
 
-# ── north arrow — lower-right, just left of scale bar ────────────────────────
+# ── north arrow — lower-right ─────────────────────────────────────────────────
 ax.annotate("N", xy=(0.88, 0.115), xytext=(0.88, 0.055),
             xycoords="axes fraction",
             fontsize=11, ha="center", fontweight="bold",
@@ -177,19 +217,19 @@ ax.annotate("N", xy=(0.88, 0.115), xytext=(0.88, 0.055),
 
 # ── title ─────────────────────────────────────────────────────────────────────
 ax.set_title("Study Area: Kentucky Mesonet Station Network",
-             fontsize=11, fontweight="bold", pad=8, fontfamily=FONT)
+             fontsize=11, fontweight="bold", pad=10, fontfamily=FONT)
 
-# ── CONUS inset — placed just below the legend in upper-left ──────────────────
+# ── CONUS inset — positioned just below legend, dynamically computed ──────────
 # Render first so we can read the legend's actual bounding box in figure coords.
 fig.canvas.draw()
-renderer    = fig.canvas.get_renderer()
-leg_bb      = leg.get_window_extent(renderer).transformed(fig.transFigure.inverted())
+renderer  = fig.canvas.get_renderer()
+leg_bb    = leg.get_window_extent(renderer).transformed(fig.transFigure.inverted())
 
-gap         = 0.012          # small vertical gap between legend and inset
-inset_h     = 0.19
-inset_w     = max(leg_bb.width, 0.20)   # at least as wide as the legend
-inset_left  = leg_bb.x0
-inset_bot   = leg_bb.y0 - gap - inset_h
+gap      = 0.010
+inset_h  = 0.185
+inset_w  = max(leg_bb.width, 0.215)
+inset_left = leg_bb.x0
+inset_bot  = leg_bb.y0 - gap - inset_h
 
 ax_ins = fig.add_axes(
     [inset_left, inset_bot, inset_w, inset_h],
@@ -197,29 +237,42 @@ ax_ins = fig.add_axes(
 )
 ax_ins.set_extent([-125, -66, 24, 50], crs=DATA_CRS)
 
+# Land background
 ax_ins.add_feature(cfeature.LAND.with_scale("50m"),
                    facecolor="#e8e8e8", edgecolor="none", zorder=1)
 ax_ins.add_feature(cfeature.OCEAN.with_scale("50m"),
                    facecolor="#c8dff0", zorder=0)
+ax_ins.add_feature(cfeature.LAKES.with_scale("50m"),
+                   facecolor="#c8dff0", edgecolor="none", zorder=1)
+
+# Country and state boundaries
 ax_ins.add_feature(cfeature.BORDERS.with_scale("50m"),
-                   edgecolor="#aaaaaa", linewidth=0.5, zorder=2)
+                   edgecolor="#888888", linewidth=0.6, zorder=2)
 ax_ins.add_feature(
     cfeature.NaturalEarthFeature("cultural",
                                  "admin_1_states_provinces_lines", "50m",
-                                 facecolor="none", edgecolor="#888888",
-                                 linewidth=0.35),
+                                 facecolor="none", edgecolor="#aaaaaa",
+                                 linewidth=0.3),
     zorder=2)
 
+# Kentucky highlighted with same border style as main map
 for geom in ky_geom:
     ax_ins.add_geometries([geom], DATA_CRS,
-                          facecolor="#e84040", edgecolor="#800000",
-                          linewidth=0.7, zorder=3)
+                          facecolor="#e84040", edgecolor="#8b0000",
+                          linewidth=0.9, zorder=3)
 
+# Clean frame matching publication style
 for spine in ax_ins.spines.values():
-    spine.set_edgecolor("#444444")
-    spine.set_linewidth(1.0)
+    spine.set_edgecolor("#333333")
+    spine.set_linewidth(1.2)
 
-ax_ins.set_title("Location in USA", fontsize=6, pad=3)
+# "USA" label centred in the inset
+ax_ins.text(0.5, 0.08, "USA", transform=ax_ins.transAxes,
+            fontsize=6, ha="center", va="bottom",
+            fontweight="bold", color="#444444")
+
+ax_ins.set_title("Location in USA", fontsize=6.5, pad=3,
+                 fontweight="bold", color="#222222")
 
 # ── save ──────────────────────────────────────────────────────────────────────
 save_kw = dict(bbox_inches="tight", facecolor="white", edgecolor="none")
