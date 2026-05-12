@@ -13,6 +13,7 @@ import cartopy.crs as ccrs
 import cartopy.feature as cfeature
 from cartopy.io.shapereader import natural_earth, Reader
 from cartopy.mpl.ticker import LongitudeFormatter, LatitudeFormatter
+from shapely.ops import unary_union
 import numpy as np
 
 # ── data ──────────────────────────────────────────────────────────────────────
@@ -40,46 +41,42 @@ ky_geom = [r.geometry for r in Reader(shpfile).records()
 ALTERNATIVES = {
     "A": {
         # Warm earth / parchment
-        "label":      "A — Warm Earth",
-        "ky_fill":    "#f5ebe0",   # warm cream
-        "ky_edge":    "#2c1810",   # dark brown, sharp
-        "neighbor":   "#ededea",   # warm light gray
-        "county":     "#c8bdb5",   # warm gray
-        "c_retain":   "#8b1a1a",   # deep red
-        "c_match":    "#f0a500",   # amber gold
+        "label":       "A — Warm Earth",
+        "ky_fill":     "#f5ebe0",  # warm cream
+        "ky_edge":     "#2c1810",  # dark brown
+        "neighbor":    "#ededea",  # warm light gray
+        "county":      "#c8bdb5",  # warm gray
+        "c_retain":    "#8b1a1a",  # deep red
+        "c_match":     "#f0a500",  # amber gold
         "c_match_edge":"#7a4e00",
-        "river":      "#90b8c8",
-        "inset_ky":   "#cc2222",   # red, distinct from cream fill
-        "inset_ky_edge": "#7a0000",
     },
     "B": {
         # Clean minimal / monochrome
-        "label":      "B — Clean Minimal",
-        "ky_fill":    "#f0f0f0",   # near white
-        "ky_edge":    "#111111",   # near black, very sharp
-        "neighbor":   "#d8d8d8",   # medium gray
-        "county":     "#bbbbbb",
-        "c_retain":   "#2b2b2b",   # dark charcoal
-        "c_match":    "#d4a017",   # gold
+        "label":       "B — Clean Minimal",
+        "ky_fill":     "#f0f0f0",  # near white
+        "ky_edge":     "#111111",  # near black
+        "neighbor":    "#d8d8d8",  # medium gray
+        "county":      "#bbbbbb",
+        "c_retain":    "#2b2b2b",  # dark charcoal
+        "c_match":     "#d4a017",  # gold
         "c_match_edge":"#6b4c00",
-        "river":      "#8ab0c8",
-        "inset_ky":   "#cc2222",
-        "inset_ky_edge": "#7a0000",
     },
     "C": {
         # Sage green / natural
-        "label":      "C — Sage Green",
-        "ky_fill":    "#e6efe6",   # light sage
-        "ky_edge":    "#1a3a1a",   # dark forest green, sharp
-        "neighbor":   "#ebebeb",
-        "county":     "#b8ceb8",   # soft green-gray
-        "c_retain":   "#2d6e2d",   # forest green
-        "c_match":    "#f0c040",   # yellow-gold
+        "label":       "C — Sage Green",
+        "ky_fill":     "#e6efe6",  # light sage
+        "ky_edge":     "#1a3a1a",  # dark forest green
+        "neighbor":    "#ebebeb",
+        "county":      "#b8ceb8",  # soft green-gray
+        "c_retain":    "#2d6e2d",  # forest green
+        "c_match":     "#f0c040",  # yellow-gold
         "c_match_edge":"#7a5e00",
-        "river":      "#7aaccc",
-        "inset_ky":   "#cc2222",
-        "inset_ky_edge": "#7a0000",
     },
+}
+
+NEIGHBOR_STATES = {
+    "Indiana", "Ohio", "Illinois", "Missouri",
+    "Tennessee", "Virginia", "West Virginia",
 }
 
 
@@ -95,38 +92,35 @@ def build_map(style_key, style):
     ax.add_feature(cfeature.LAND.with_scale("50m"),
                    facecolor=style["neighbor"], zorder=1)
 
-    # KY fill
+    # KY fill (no edge here — border drawn separately as a crisp line)
     for geom in ky_geom:
         ax.add_geometries([geom], DATA_CRS, facecolor=style["ky_fill"],
                           edgecolor="none", linewidth=0, zorder=2)
 
-    # County edges
-    ax.add_feature(
-        cfeature.NaturalEarthFeature("cultural", "admin_2_counties", "10m",
-                                     facecolor="none", edgecolor=style["county"],
-                                     linewidth=0.35),
-        zorder=3)
+    # KY counties only — load and filter shapefile so no neighbor counties appear
+    county_shp = natural_earth(resolution="10m", category="cultural",
+                               name="admin_2_counties")
+    ky_county_geoms = [r.geometry for r in Reader(county_shp).records()
+                       if r.attributes.get("iso_3166_2", "") == "US-KY"]
+    ax.add_geometries(ky_county_geoms, DATA_CRS, facecolor="none",
+                      edgecolor=style["county"], linewidth=0.35, zorder=3)
 
-    # KY border — sharp, solid, no cap softness
-    for geom in ky_geom:
-        ax.add_geometries([geom], DATA_CRS, facecolor="none",
-                          edgecolor=style["ky_edge"], linewidth=2.2,
-                          zorder=4, capstyle="butt", joinstyle="miter")
+    # Neighboring state outlines — drawn once, clean single stroke
+    neighbor_geoms = [r.geometry for r in Reader(shpfile).records()
+                      if r.attributes.get("name") in NEIGHBOR_STATES]
+    ax.add_geometries(neighbor_geoms, DATA_CRS, facecolor="none",
+                      edgecolor="#666666", linewidth=0.7, zorder=4)
 
-    # State lines
-    ax.add_feature(
-        cfeature.NaturalEarthFeature("cultural",
-                                     "admin_1_states_provinces_lines", "50m",
-                                     facecolor="none", edgecolor="#666666",
-                                     linewidth=0.9),
-        zorder=4)
-
-    # Rivers
-    ax.add_feature(
-        cfeature.NaturalEarthFeature("physical", "rivers_lake_centerlines", "10m",
-                                     facecolor="none", edgecolor=style["river"],
-                                     linewidth=0.5),
-        zorder=5)
+    # KY border — extract unified boundary and plot as a single ax.plot line
+    # so cap/join styles are fully controlled (no double-stroke from state lines)
+    ky_union = unary_union(ky_geom)
+    boundary = ky_union.boundary
+    segs = [boundary] if boundary.geom_type == "LineString" else list(boundary.geoms)
+    for seg in segs:
+        xs, ys = seg.xy
+        ax.plot(xs, ys, transform=DATA_CRS, color=style["ky_edge"],
+                linewidth=2.2, solid_capstyle="butt", solid_joinstyle="miter",
+                zorder=5)
 
     # ── graticule ─────────────────────────────────────────────────────────────
     gl = ax.gridlines(
@@ -265,11 +259,11 @@ def build_map(style_key, style):
                                      linewidth=0.3),
         zorder=2)
 
-    # KY in inset: always red — distinct from main map fill, per Layout1 style
+    # KY in inset: same fill as the main map so the inset reads as a locator
     for geom in ky_geom:
         ax_ins.add_geometries([geom], DATA_CRS,
-                              facecolor=style["inset_ky"],
-                              edgecolor=style["inset_ky_edge"],
+                              facecolor=style["ky_fill"],
+                              edgecolor=style["ky_edge"],
                               linewidth=1.0, zorder=3)
 
     for spine in ax_ins.spines.values():
